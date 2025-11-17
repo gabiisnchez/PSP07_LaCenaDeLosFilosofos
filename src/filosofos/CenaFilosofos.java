@@ -31,7 +31,8 @@ public class CenaFilosofos {
             Semaphore palilloIzq = palillos[i];
 
             // palilloDer es el siguiente.
-            // El operador módulo (%) permite que el último filósofo tome el palillo 0, cerrando el círculo.
+            // El operador módulo (%) permite que el último filósofo
+            // tome el palillo 0, cerrando el círculo.
             Semaphore palilloDer = palillos[(i + 1) % NUM_FILOSOFOS];
 
             // Creamos el objeto Runnable (Filosofo)

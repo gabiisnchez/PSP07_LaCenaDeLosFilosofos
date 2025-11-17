@@ -56,8 +56,8 @@ public class Filosofo implements Runnable {
     public void run() {
         try {
             while (vecesComido < MAX_COMIDAS) {
-                pensar();
-                comer();
+                pensar();       // Simula actividad de pensamiento
+                comer();        // Intenta coger los palillos y comer
                 vecesComido++;
             }
         } catch (InterruptedException e) {
