@@ -16,7 +16,7 @@ public class Filosofo implements Runnable{
      * @param palilloDer Semáforo que representa el palillo derecho
      */
     public Filosofo(int id, Semaphore palilloIzq, Semaphore palilloDer) {
-        this.id = id;
+        this.id = id + 1;
         this.palilloIzquierdo = palilloIzq;
         this.palilloDerecho = palilloDer;
         this.vecesComido = 0;
@@ -55,7 +55,7 @@ public class Filosofo implements Runnable{
     private void comer() throws InterruptedException{
         System.out.println("Filosofo " + id + " tiene hambre e intenta coger palillos.");
 
-        if (id % 2 == 0) {
+        if ((id - 1) % 2 == 0) {
             tomarPalillos(palilloIzquierdo, palilloDerecho, "izquierdo", "derecho");
         } else {
             tomarPalillos(palilloDerecho, palilloIzquierdo, "derecho", "izquierdo");
