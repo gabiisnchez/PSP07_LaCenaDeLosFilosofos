@@ -96,8 +96,8 @@ public class Filosofo implements Runnable {
         if (id % 2 == 0) {
 
             // Si el ID es PAR: Intenta coger Izquierda -> Derecha
-            palilloIzquierdo.acquire(); // Bloquea si no está disponible
-            palilloDerecho.acquire();
+            palilloIzquierdo.acquire(); // Bloquea hasta que el palillo esté disponible
+            palilloDerecho.acquire();   // Bloquea hasta que el otro palillo esté disponible
         } else {
             // Si el ID es IMPAR: Intenta coger Derecha -> Izquierda
             palilloDerecho.acquire();
