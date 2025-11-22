@@ -1,31 +1,28 @@
 package filosofos;
 
-import java.util.concurrent.Semaphore;
-
 /**
  * Representa a un filósofo en el problema de la "Cena de los Filósofos".
- * Cada filósofo es un hilo (Thread) que alterna entre pensar y comer.
- * Para comer, necesita adquirir dos recursos compartidos (semáforos),
- * que representan los palillos a su izquierda y derecha.
+ * Cada filósofo es un hilo (Thread) que alterna entre pensar y comer,
+ * solicitando y liberando palillos a través de la clase Mesa.
  */
 public class Filosofo implements Runnable {
 
     // Identificador único del filósofo (1-5).
     private int id;
+    // Referencia a la mesa para interactuar con los palillos.
+    private Mesa mesa;
 
-    // Semáforo que controla el acceso al palillo izquierdo.
-    private Semaphore palilloIzquierdo;
-
-    // Semáforo que controla el acceso al palillo derecho.
-    private Semaphore palilloDerecho;
+    // Índices de los palillos en el array de la Mesa (0-4).
+    private int palilloIzqIndex;
+    private int palilloDerIndex;
 
     // Contador de cuántas veces ha comido el filósofo.
     private int vecesComido;
 
-    // Límite de comidas para que el hilo termine (evita bucle infinito).
+    // Límite de comidas para que el hilo termine.
     private static final int MAX_COMIDAS = 3;
 
-    // Variables auxiliares solo para mostrar el mensaje de salida exacto de la captura
+    // Variables auxiliares solo para mostrar el mensaje de salida exacto
     private int idPalilloIzqVisual;
     private int idPalilloDerVisual;
 
@@ -33,18 +30,19 @@ public class Filosofo implements Runnable {
      * Constructor de la clase Filosofo.
      *
      * @param id          Índice del filósofo (0-4). Se transforma a 1-5 internamente.
-     * @param palilloIzq  Referencia al semáforo del palillo izquierdo.
-     * @param palilloDer  Referencia al semáforo del palillo derecho.
+     * @param mesa        Referencia al objeto Mesa que gestiona los palillos.
+     * @param palilloIzqIndex Índice del palillo izquierdo en el array de la Mesa.
+     * @param palilloDerIndex Índice del palillo derecho en el array de la Mesa.
      */
-    public Filosofo(int id, Semaphore palilloIzq, Semaphore palilloDer) {
+    public Filosofo(int id, Mesa mesa, int palilloIzqIndex, int palilloDerIndex) {
         this.id = id + 1;
-        this.palilloIzquierdo = palilloIzq;
-        this.palilloDerecho = palilloDer;
+        this.mesa = mesa;
+        this.palilloIzqIndex = palilloIzqIndex;
+        this.palilloDerIndex = palilloDerIndex;
         this.vecesComido = 0;
 
         // Lógica para calcular los IDs de los palillos (para el print final)
         this.idPalilloIzqVisual = this.id;
-        // El derecho es el anterior. Si soy el 1, mi derecha es el 5 (mesa circular).
         this.idPalilloDerVisual = (this.id == 1) ? 5 : this.id - 1;
     }
 
@@ -61,8 +59,6 @@ public class Filosofo implements Runnable {
                 vecesComido++;
             }
         } catch (InterruptedException e) {
-
-            // Restablece el estado de interrupción y maneja la salida abrupta
             Thread.currentThread().interrupt();
             System.err.println("Filosofo " + id + " fue interrumpido.");
         }
@@ -70,7 +66,6 @@ public class Filosofo implements Runnable {
 
     /**
      * Simula la acción de pensar.
-     * El hilo se duerme un tiempo aleatorio para simular procesamiento.
      *
      * @throws InterruptedException Si el hilo es interrumpido mientras duerme.
      */
@@ -80,49 +75,31 @@ public class Filosofo implements Runnable {
     }
 
     /**
-     * Gestiona la adquisición de los palillos (semáforos) y la acción de comer.
-     * Se utiliza una estrategia de jerarquía de recursos o ruptura de simetría.
-     * Los filósofos pares cogen primero el izquierdo y luego el derecho.
-     * Los impares cogen primero el derecho y luego el izquierdo.
-     * Esto rompe la espera circular.
+     * Llama a la Mesa para gestionar la adquisición y liberación de los palillos.
      *
      * @throws InterruptedException Si el hilo es interrumpido mientras espera.
      */
     private void comer() throws InterruptedException {
         System.out.println("Filosofo " + id + " esta hambriento");
 
-        // Estrategia para evitar que todos cojan el palillo izquierdo a la vez
-        // y se queden esperando eternamente por el derecho (Deadlock).
-        if (id % 2 == 0) {
+        // Llama al método de la Mesa para coger los palillos
+        mesa.cogerPalillos(id, palilloIzqIndex, palilloDerIndex);
 
-            // Si el ID es PAR: Intenta coger Izquierda -> Derecha
-            palilloIzquierdo.acquire(); // Bloquea hasta que el palillo esté disponible
-            palilloDerecho.acquire();   // Bloquea hasta que el otro palillo esté disponible
-        } else {
-            // Si el ID es IMPAR: Intenta coger Derecha -> Izquierda
-            palilloDerecho.acquire();
-            palilloIzquierdo.acquire();
-        }
-
-        // Si llega aquí, tiene ambos semáforos (permisos)
+        // Si llega aquí, tiene ambos palillos
         System.out.println("Filosofo " + id + " esta comiendo");
 
         // Simula el tiempo que tarda en comer
         Thread.sleep((long) (Math.random() * 1500));
 
-        // Libera los recursos
+        // Llama al método de la Mesa para liberar los palillos
         soltarPalillos();
     }
 
     /**
-     * Libera los semáforos de ambos palillos y notifica la finalización.
-     * Esto permite que los vecinos puedan usar estos palillos.
+     * Llama al método de la Mesa para liberar los palillos y notifica.
      */
     private void soltarPalillos() {
-
-        // .release() incrementa el contador del semáforo, despertando hilos en espera
-        palilloIzquierdo.release();
-        palilloDerecho.release();
+        mesa.soltarPalillos(palilloIzqIndex, palilloDerIndex);
 
         // Mensaje con formato específico solicitado
         System.out.println("Filosofo " + id + " ha terminado de comer, palillos libres: "
