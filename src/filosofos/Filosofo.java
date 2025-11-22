@@ -82,7 +82,7 @@ public class Filosofo implements Runnable {
     private void comer() throws InterruptedException {
         System.out.println("Filosofo " + id + " esta hambriento");
 
-        // Llama al método de la Mesa para coger los palillos
+        // Llama al metodo de la Mesa para coger los palillos
         mesa.cogerPalillos(id, palilloIzqIndex, palilloDerIndex);
 
         // Si llega aquí, tiene ambos palillos
@@ -91,12 +91,12 @@ public class Filosofo implements Runnable {
         // Simula el tiempo que tarda en comer
         Thread.sleep((long) (Math.random() * 1500));
 
-        // Llama al método de la Mesa para liberar los palillos
+        // Llama al metodo de la Mesa para liberar los palillos
         soltarPalillos();
     }
 
     /**
-     * Llama al método de la Mesa para liberar los palillos y notifica.
+     * Llama al metodo de la Mesa para liberar los palillos y notifica.
      */
     private void soltarPalillos() {
         mesa.soltarPalillos(palilloIzqIndex, palilloDerIndex);
