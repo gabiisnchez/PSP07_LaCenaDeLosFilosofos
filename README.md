@@ -25,14 +25,14 @@
 
 **La Cena de los Filósofos** es una implementación en Java del famoso problema propuesto por Edsger Dijkstra para ilustrar los desafíos de la sincronización en sistemas operativos. El proyecto simula a 5 filósofos que compiten por recursos limitados (palillos) evitando problemas clásicos como el *Deadlock* (interbloqueo) y la *Inanición*.
 
-Este proyecto demuestra el uso eficiente de la clase `java.util.concurrent.Semaphore` para gestionar el acceso concurrente a recursos compartidos.
+Este proyecto demuestra el uso eficiente de la clase `java.util.concurrent.Semaphore` para gestionar el acceso concurrente a recursos compartidos bajo un diseño de **Arquitectura de Tres Capas** (Orquestador, Gestor de Recursos, Hilo de Trabajo).
 
 ### ✨ Lo que hace especial a esta implementación:
 
-- 🛡️ **Anti-Deadlock**: Implementa una solución de ruptura de simetría (jerarquía de recursos) para evitar bloqueos eternos.
+- 🛡️ **Anti-Deadlock**: Implementa una solución de ruptura de simetría (jerarquía de recursos) para evitar bloqueos eternos, centralizada en la clase `Mesa`.
 - 🧵 **Multihilo Puro**: Cada filósofo es un hilo independiente (`Thread`) con su propio ciclo de vida.
 - 🚥 **Semáforos Binarios**: Gestión precisa de los palillos mediante `acquire()` y `release()`.
-- 📊 **Traza Visual**: Salida por consola detallada que muestra el estado de los recursos en tiempo real.
+- 🔄 **Diseño Refactorizado**: La clase `Mesa` centraliza la gestión de recursos y la orquestación de la simulación, simplificando la clase `CenaFilosofos` (`main`).
 - ⏱️ **Ciclo Finito**: Configurado para terminar tras un número específico de comidas (MAX_COMIDAS = 3), ideal para pruebas y corrección.
 
 ---
@@ -42,16 +42,16 @@ Este proyecto demuestra el uso eficiente de la clase `java.util.concurrent.Semap
 ### ⚙️ Mecánicas de la Simulación
 
 - **5 Filósofos (Hilos)**: Comensales sentados en una mesa circular.
-- **5 Palillos (Semáforos)**: Recursos compartidos situados entre cada par de filósofos.
+- **5 Palillos (Semáforos)**: Recursos compartidos situados entre cada par de filósofos, gestionados por la `Mesa`.
 - **Estados del Hilo**:
-    1. 💭 **Pensando**: Simula procesamiento (tiempo aleatorio).
-    2. 😩 **Hambriento**: Intenta adquirir los semáforos (palillos).
-    3. 🍝 **Comiendo**: Mantiene los recursos ocupados (tiempo aleatorio).
-    4. ✅ **Terminado**: Libera los recursos y notifica qué palillos quedaron libres.
+  1. 💭 **Pensando**: Simula procesamiento (tiempo aleatorio).
+  2. 😩 **Hambriento**: **Delega a la `Mesa`** la adquisición de los semáforos (palillos).
+  3. 🍝 **Comiendo**: Mantiene los recursos ocupados (tiempo aleatorio).
+  4. ✅ **Terminado**: **Delega a la `Mesa`** la liberación de los recursos y notifica qué palillos quedaron libres.
 
 ### 🛡️ Solución al Interbloqueo
 
-A diferencia de las implementaciones ingenuas donde todos toman primero el palillo izquierdo (causando deadlock), este proyecto usa una **Estrategia de Jerarquía** implementada en la clase `Filosofo`:
+El mecanismo que rompe la espera circular está centralizado en la clase **`Mesa`** y se aplica cuando el filósofo llama al método `cogerPalillos()`:
 
 - **Filósofos Pares**: Toman primero el palillo **Izquierdo** y luego el **Derecho**.
 - **Filósofos Impares**: Toman primero el palillo **Derecho** y luego el **Izquierdo**.
@@ -69,7 +69,6 @@ A diferencia de las implementaciones ingenuas donde todos toman primero el palil
 ### Ejecución Paso a Paso
 
 **1. Clona o descarga el repositorio:**
-
 ```bash
 git clone <url-de-tu-repo>
 cd PSP07_LaCenaDeLosFilosofos
@@ -78,13 +77,11 @@ cd PSP07_LaCenaDeLosFilosofos
 **2. Compila el código:**
 
 Desde la carpeta raíz del proyecto (src):
-
 ```bash
 javac -d ../out src/filosofos/*.java
 ```
 
 **3. Ejecuta la simulación:**
-
 ```bash
 java -cp ../out filosofos.CenaFilosofos
 ```
@@ -92,15 +89,15 @@ java -cp ../out filosofos.CenaFilosofos
 ---
 
 ## 📁 Estructura del Proyecto
-
 ```
 PSP07_LaCenaDeLosFilosofos/
 ├── .idea/                      # Configuración del IDE
 ├── out/                        # Archivos .class compilados
 ├── src/
 │   └── filosofos/
-│       ├── CenaFilosofos.java  # Clase Principal (Main)
-│       └── Filosofo.java       # Lógica del Hilo y Semáforos
+│       ├── CenaFilosofos.java  # Clase Principal (Main, Orquestador Mínimo)
+│       ├── Mesa.java           # Gestor de Recursos y Simulación
+│       └── Filosofo.java       # Lógica del Hilo (Runnable)
 ├── PSP07_..._Documentacion.pdf # Documentación funcional
 └── README.md                   # Este archivo
 ```
@@ -109,8 +106,9 @@ PSP07_LaCenaDeLosFilosofos/
 
 | Archivo | Descripción |
 |---------|-------------|
-| `CenaFilosofos.java` | Main. Inicializa el array de semáforos (palillos), crea los hilos de los filósofos y gestiona el arranque (start) y espera (join) de la simulación. |
-| `Filosofo.java` | Runnable. Define el comportamiento del filósofo: pensar, mecanismo para tomar palillos (evitando deadlock), comer y soltar recursos. Contiene los sleep aleatorios. |
+| `CenaFilosofos.java` | Mínima Expresión. Solo instancia la Mesa y llama a su método `ejecutarSimulacion()`. No contiene bucles ni lógica de concurrencia. |
+| `Mesa.java` | Gestor Central. Inicializa el array de semáforos (palillos), calcula los índices de los recursos, implementa la lógica anti-deadlock (`cogerPalillos()`) y gestiona el arranque (`start`) y espera (`join`) de todos los hilos (`ejecutarSimulacion()`). |
+| `Filosofo.java` | Runnable. Define el comportamiento del filósofo: pensar, delega en la Mesa para tomar/soltar palillos, comer. Contiene los `sleep` aleatorios. |
 
 ---
 
@@ -122,25 +120,23 @@ Cada filósofo necesita dos palillos para comer, pero comparte uno con su vecino
 
 ### Código Clave (Anti-Deadlock)
 
-En `Filosofo.java`, la lógica de adquisición de recursos es asimétrica:
-
+En la clase `Mesa.java`, el método `cogerPalillos()` implementa la lógica asimétrica:
 ```java
-// Estrategia para evitar Deadlock (Filosofo.java)
+// Estrategia para evitar Deadlock (Mesa.java)
 if (id % 2 == 0) {
     // Pares: Izquierda -> Derecha
-    palilloIzquierdo.acquire();
-    palilloDerecho.acquire();
+    palillos[palilloIzqIndex].acquire();
+    palillos[palilloDerIndex].acquire();
 } else {
     // Impares: Derecha -> Izquierda
-    palilloDerecho.acquire();
-    palilloIzquierdo.acquire();
+    palillos[palilloDerIndex].acquire();
+    palillos[palilloIzqIndex].acquire();
 }
 ```
 
 ### Visualización de Salida
 
 El programa imprime una traza clara para verificar que los recursos se liberan correctamente:
-
 ```
 Filosofo 1 esta pensando
 Filosofo 1 esta hambriento
@@ -152,12 +148,11 @@ Filosofo 1 ha terminado de comer, palillos libres: 1, 5
 
 ## ⚙️ Configuración
 
-Puedes ajustar los parámetros de la simulación editando las constantes en `Filosofo.java` y `CenaFilosofos.java`:
+Puedes ajustar los parámetros de la simulación editando las constantes en las clases pertinentes:
 
 ### Ajustar Duración
 
 En `Filosofo.java`:
-
 ```java
 // Límite de comidas antes de finalizar el hilo
 private static final int MAX_COMIDAS = 3;
@@ -170,7 +165,6 @@ Thread.sleep((long) (Math.random() * 1500)); // Tiempo comiendo
 ### Ajustar Comensales
 
 En `CenaFilosofos.java`:
-
 ```java
 private static final int NUM_FILOSOFOS = 5; // Puedes aumentar o reducir la mesa
 ```
@@ -203,7 +197,7 @@ Este es un proyecto académico, pero si encuentras formas de optimizar el algori
 
 ## 👨‍💻 Autor
 
-Desarrollado para la asignatura de PSP.
+Desarrollado para la asignatura de **PSP**.
 
 **Contacto:**
 - GitHub: [@gabiisnchez](https://github.com/gabiisnchez)
@@ -212,7 +206,7 @@ Desarrollado para la asignatura de PSP.
 
 <div align="center">
 
-⭐ Si este código te ayudó a entender los semáforos, dale una estrella en GitHub ⭐
+⭐ **Si este código te ayudó a entender los semáforos, dale una estrella en GitHub** ⭐
 
 *Hecho con ☕ y Java*
 
